@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BINGO Card Generator</title>
+    <title>REYBINGO</title>
     <style>
         body {
             background-color: #003333;
@@ -15,6 +15,7 @@
         #cards {
             display: flex;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 20px;
         }
 
@@ -54,37 +55,34 @@
             margin: 20px auto;
             font-size: 24px;
         }
+
+        .card {
+            position: relative;
+        }
+
+        .winner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: gold;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
-    <div id="cards">
-        <table data-card="1">
-            <thead>
-                <tr>
-                    <th>B</th>
-                    <th>I</th>
-                    <th>N</th>
-                    <th>G</th>
-                    <th>O</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <table data-card="2">
-            <thead>
-                <tr>
-                    <th>B</th>
-                    <th>I</th>
-                    <th>N</th>
-                    <th>G</th>
-                    <th>O</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <!-- Section to input number of cards and player names -->
+    <div id="setup">
+        <label for="numPlayers">Number of Players:</label>
+        <input type="number" id="numPlayers" min="1" value="1">
+        <button onclick="setupPlayers()">Set</button>
+        <div id="playerNames"></div>
     </div>
+
+    <div id="cards"></div>
 
     <div id="callout">
         <button onclick="callNumber()">Call Number</button>
@@ -100,6 +98,31 @@
     <script>
         let calledNumbers = [];
         let musicPlaying = true;  // Assuming music starts playing by default
+
+        function setupPlayers() {
+            let numPlayers = document.getElementById('numPlayers').value;
+            let playerNamesDiv = document.getElementById('playerNames');
+            playerNamesDiv.innerHTML = '';
+            for(let i=0; i<numPlayers; i++) {
+                playerNamesDiv.innerHTML += `<label for="player${i}">Player ${i+1} Name:</label><input type="text" id="player${i}" required><br>`;
+            }
+            playerNamesDiv.innerHTML += '<button onclick="startGame()">Start Game</button>';
+        }
+
+        function startGame() {
+            let numPlayers = document.getElementById('numPlayers').value;
+            let cardsDiv = document.getElementById('cards');
+            cardsDiv.innerHTML = ''; // Clear existing cards
+            for(let i=0; i<numPlayers; i++) {
+                let playerName = document.getElementById(`player${i}`).value || `Player ${i+1}`;
+                let card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h3>${playerName}</h3><table data-card="${i+1}"><thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead><tbody></tbody></table><div class="winner">WINNER!</div>`;
+                cardsDiv.appendChild(card);
+                generateCard(card.querySelector('tbody'));
+            }
+            document.getElementById('setup').style.display = 'none'; // Hide the setup section
+        }
 
         function generateCard(cardElement) {
             const ranges = [
@@ -164,8 +187,8 @@
         }
 
         function checkForBingo() {
-            const cards = [document.querySelector('table[data-card="1"]'), document.querySelector('table[data-card="2"]')];
-            for (let card of cards) {
+            const cards = document.querySelectorAll('[data-card]');
+            cards.forEach(card => {
                 let rows = card.querySelectorAll('tr');
                 let bingo = false;
                 for (let row of rows) {
@@ -182,10 +205,10 @@
                     }
                 }
                 if (bingo) {
+                    card.parentElement.querySelector('.winner').style.display = 'block';
                     document.getElementById("bingoAudio").play();
-                    break;
                 }
-            }
+            });
         }
 
         function toggleMusic() {
@@ -198,10 +221,7 @@
             musicPlaying = !musicPlaying;
         }
 
-        generateCard(document.querySelector('table[data-card="1"] tbody'));
-        generateCard(document.querySelector('table[data-card="2"] tbody'));
-
-        // Play the looping background music
+        // Initially, the background music plays
         document.getElementById("loopAudio").play();
     </script>
 </body>
