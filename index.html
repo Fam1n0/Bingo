@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BINGO Card Generator</title>
+    <style>
+        body {
+            background-color: #003333;
+            color: #FFF;
+            font-family: Arial, sans-serif;
+        }
+
+        #cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 220px;
+            margin: 20px auto;
+        }
+
+        td, th {
+            border: 1px solid white;
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        .called {
+            text-decoration: line-through;
+            color: red;
+            position: relative;
+        }
+
+        .called::after {
+            content: 'X';
+            color: red;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #callout {
+            text-align: center;
+            margin: 20px auto;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cards">
+        <table data-card="1">
+            <thead>
+                <tr>
+                    <th>B</th>
+                    <th>I</th>
+                    <th>N</th>
+                    <th>G</th>
+                    <th>O</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <table data-card="2">
+            <thead>
+                <tr>
+                    <th>B</th>
+                    <th>I</th>
+                    <th>N</th>
+                    <th>G</th>
+                    <th>O</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="callout">
+        <button onclick="callNumber()">Call Number</button>
+        <button onclick="toggleMusic()">Toggle Music</button>
+        <p id="called-number">Called: None yet</p>
+    </div>
+
+    <!-- Audio elements for sound files -->
+    <audio id="loopAudio" src="musicforthegame.mp3" loop></audio>
+    <audio id="drawAudio" src="button.mp3"></audio>
+    <audio id="bingoAudio" src="win.mp3"></audio>
+
+    <script>
+        let calledNumbers = [];
+        let musicPlaying = true;  // Assuming music starts playing by default
+
+        function generateCard(cardElement) {
+            const ranges = [
+                [1, 15], [16, 30], [31, 45],
+                [46, 60], [61, 75]
+            ];
+            let card = '';
+            for (let row = 0; row < 5; row++) {
+                card += '<tr>';
+                for (let col = 0; col < 5; col++) {
+                    if (row === 2 && col === 2) {
+                        card += '<td data-number="Free">Free</td>';
+                    } else {
+                        let num;
+                        do {
+                            num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
+                        } while (card.includes('data-number="' + num + '"'));
+                        card += `<td data-number="${num}">${num}</td>`;
+                    }
+                }
+                card += '</tr>';
+            }
+            cardElement.innerHTML = card;
+        }
+
+        function callNumber() {
+            if (calledNumbers.length === 0) {
+                document.querySelectorAll('td[data-number="Free"]').forEach(cell => cell.classList.add('called'));
+            }
+
+            if (calledNumbers.length === 75) {
+                alert('All numbers called!');
+                return;
+            }
+            let number;
+            do {
+                number = Math.floor(Math.random() * 75) + 1;
+            } while (calledNumbers.includes(number));
+            calledNumbers.push(number);
+
+            let prefix;
+            if (number <= 15) prefix = 'B';
+            else if (number <= 30) prefix = 'I';
+            else if (number <= 45) prefix = 'N';
+            else if (number <= 60) prefix = 'G';
+            else prefix = 'O';
+
+            document.getElementById('called-number').innerText = 'Called: ' + prefix + number;
+
+            // Play the draw sound
+            document.getElementById("drawAudio").play();
+
+            markCalledNumber(number);
+
+            // Check for bingo after drawing the number
+            checkForBingo();
+        }
+
+        function markCalledNumber(number) {
+            const spots = document.querySelectorAll(`td[data-number="${number}"]`);
+            spots.forEach(spot => spot.classList.add('called'));
+        }
+
+        function checkForBingo() {
+            const cards = [document.querySelector('table[data-card="1"]'), document.querySelector('table[data-card="2"]')];
+            for (let card of cards) {
+                let rows = card.querySelectorAll('tr');
+                let bingo = false;
+                for (let row of rows) {
+                    let cells = row.querySelectorAll('td');
+                    let calledCount = 0;
+                    for (let cell of cells) {
+                        if (cell.classList.contains('called') || cell.dataset.number === "Free") {
+                            calledCount++;
+                        }
+                    }
+                    if (calledCount === 5) {
+                        bingo = true;
+                        break;
+                    }
+                }
+                if (bingo) {
+                    document.getElementById("bingoAudio").play();
+                    break;
+                }
+            }
+        }
+
+        function toggleMusic() {
+            const audioElem = document.getElementById("loopAudio");
+            if (musicPlaying) {
+                audioElem.pause();
+            } else {
+                audioElem.play();
+            }
+            musicPlaying = !musicPlaying;
+        }
+
+        generateCard(document.querySelector('table[data-card="1"] tbody'));
+        generateCard(document.querySelector('table[data-card="2"] tbody'));
+
+        // Play the looping background music
+        document.getElementById("loopAudio").play();
+    </script>
+</body>
+
+</html>
